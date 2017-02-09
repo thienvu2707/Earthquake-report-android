@@ -17,39 +17,45 @@ package com.example.android.quakereport;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class EarthquakeActivity extends AppCompatActivity {
 
-    public static final String LOG_TAG = EarthquakeActivity.class.getName();
+    //public static final String LOG_TAG = EarthquakeActivity.class.getName();
+    /**
+     * Adapter for list of earthquakes
+     */
+    private EarthquakeAdapter mAdapter;
+
+    private static final String USGS_REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&minmag=5&limit=10";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
-        // Create a fake list of earthquake locations.
-        final ArrayList<EarthquakeWord> earthquakes = QueryUtils.extractEarthquakes();
-
-        //set adapter for arrayList
-        final ArrayAdapter showData = new EarthquakeAdapter(this, earthquakes);
         //finding listview
         ListView findListView = (ListView) findViewById(R.id.list);
-        //set Adapter to show on UI
-        findListView.setAdapter(showData);
+
+        //create a new adapter that take empty list of earthquake as input
+        mAdapter = new EarthquakeAdapter(this, new ArrayList<EarthquakeWord>());
+
+        //set adapter on UI show it can show user interface
+        findListView.setAdapter(mAdapter);
 
         findListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
                 //find the current earthquake that user clicked on
-                EarthquakeWord currentEarthquake = (EarthquakeWord) showData.getItem(position);
+                EarthquakeWord currentEarthquake = mAdapter.getItem(position);
 
                 //convert URL to URI
                 Uri earthquakeUri = Uri.parse(currentEarthquake.getmURL());
@@ -61,5 +67,47 @@ public class EarthquakeActivity extends AppCompatActivity {
                 startActivity(websiteIntent);
             }
         });
+
+        //start AsyncTask to fetch data
+        earthquakeAsyncTask task = new earthquakeAsyncTask();
+        task.execute(USGS_REQUEST_URL);
+    }
+
+    /**
+     * AsyncTask to request http in the background
+     */
+    private class earthquakeAsyncTask extends AsyncTask<String, Void, List<EarthquakeWord>> {
+        /**
+         * this method to run in background thread and perform network request
+         *
+         * @param urls
+         * @return
+         */
+        @Override
+        protected List<EarthquakeWord> doInBackground(String... urls) {
+            //check if the url null or not
+            if (urls.length < 1 || urls[0] == null)
+                return null;
+            //perform HTTP request and then JSON processed the response
+            List<EarthquakeWord> resultEarthquake = QueryUtils.fetchEarthquakeData(urls[0]);
+
+            return resultEarthquake;
+        }
+
+        /**
+         * use on post execute to update to UI
+         */
+        @Override
+        protected void onPostExecute(List<EarthquakeWord> resultEarthquake) {
+            //clear adapter of previous data
+            mAdapter.clear();
+
+            //check if the result null or not
+            if (resultEarthquake != null && !resultEarthquake.isEmpty())
+                mAdapter.addAll(resultEarthquake);
+
+            //update information displayed to the user
+
+        }
     }
 }
