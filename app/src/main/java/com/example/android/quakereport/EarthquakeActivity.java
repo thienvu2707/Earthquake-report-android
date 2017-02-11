@@ -15,11 +15,13 @@
  */
 package com.example.android.quakereport;
 
+import android.app.LoaderManager;
 import android.content.Intent;
+import android.content.Loader;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -27,9 +29,14 @@ import android.widget.ListView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EarthquakeActivity extends AppCompatActivity {
+public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<EarthquakeWord>> {
 
-    //public static final String LOG_TAG = EarthquakeActivity.class.getName();
+    //add log message
+    private static final String LOG_TAG = EarthquakeActivity.class.getName();
+
+    //Identify the loader id
+    private static final int EARTHQUAKE_LOADER_ID = 1;
+
     /**
      * Adapter for list of earthquakes
      */
@@ -39,6 +46,7 @@ public class EarthquakeActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(LOG_TAG, "show how onCreate work call.......");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
@@ -68,46 +76,79 @@ public class EarthquakeActivity extends AppCompatActivity {
             }
         });
 
-        //start AsyncTask to fetch data
-        earthquakeAsyncTask task = new earthquakeAsyncTask();
-        task.execute(USGS_REQUEST_URL);
+        //get reference to the LoaderManager, in order to interact with loaders
+        LoaderManager loaderManager = getLoaderManager();
+
+        // Initialize the loader. Pass in the int ID constant defined above and pass in null for
+        // the bundle. Pass in this activity for the LoaderCallbacks parameter (which is valid
+        // because this activity implements the LoaderCallbacks interface).
+        Log.i(LOG_TAG, "Show how initLoader working........");
+        loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, this);
+
+
+//        //start AsyncTask to fetch data
+//        earthquakeAsyncTask task = new earthquakeAsyncTask();
+//        task.execute(USGS_REQUEST_URL);
     }
 
-    /**
-     * AsyncTask to request http in the background
-     */
-    private class earthquakeAsyncTask extends AsyncTask<String, Void, List<EarthquakeWord>> {
-        /**
-         * this method to run in background thread and perform network request
-         *
-         * @param urls
-         * @return
-         */
-        @Override
-        protected List<EarthquakeWord> doInBackground(String... urls) {
-            //check if the url null or not
-            if (urls.length < 1 || urls[0] == null)
-                return null;
-            //perform HTTP request and then JSON processed the response
-            List<EarthquakeWord> resultEarthquake = QueryUtils.fetchEarthquakeData(urls[0]);
-
-            return resultEarthquake;
-        }
-
-        /**
-         * use on post execute to update to UI
-         */
-        @Override
-        protected void onPostExecute(List<EarthquakeWord> resultEarthquake) {
-            //clear adapter of previous data
-            mAdapter.clear();
-
-            //check if the result null or not
-            if (resultEarthquake != null && !resultEarthquake.isEmpty())
-                mAdapter.addAll(resultEarthquake);
-
-            //update information displayed to the user
-
-        }
+    @Override
+    public Loader<List<EarthquakeWord>> onCreateLoader(int id, Bundle bundle) {
+        Log.i(LOG_TAG, "onCreateLoader how it work......");
+        //create new loader for given url
+        return new EarthquakeLoader(this, USGS_REQUEST_URL);
     }
+
+    @Override
+    public void onLoadFinished(Loader<List<EarthquakeWord>> loader, List<EarthquakeWord> earthquakeWords) {
+        Log.i(LOG_TAG, "onLoadFinished how it work.........");
+        //clear the adapter of the previous data
+        mAdapter.clear();
+
+        //check if the link is valid list then add them to adapter
+        if (earthquakeWords != null && !earthquakeWords.isEmpty())
+            mAdapter.addAll(earthquakeWords);
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<EarthquakeWord>> loader) {
+        Log.i(LOG_TAG, "onLoaderReset how it work............");
+        //clear existing data to reset
+        mAdapter.clear();
+    }
+
+//    /**
+//     * AsyncTask to request http in the background
+//     */
+//    private class earthquakeAsyncTask extends AsyncTask<String, Void, List<EarthquakeWord>> {
+//        /**
+//         * this method to run in background thread and perform network request
+//         *
+//         * @param urls
+//         * @return
+//         */
+//        @Override
+//        protected List<EarthquakeWord> doInBackground(String... urls) {
+//            //check if the url null or not
+//            if (urls.length < 1 || urls[0] == null)
+//                return null;
+//            //perform HTTP request and then JSON processed the response
+//            List<EarthquakeWord> resultEarthquake = QueryUtils.fetchEarthquakeData(urls[0]);
+//
+//            return resultEarthquake;
+//        }
+//
+//        /**
+//         * use on post execute to update to UI
+//         */
+//        @Override
+//        protected void onPostExecute(List<EarthquakeWord> resultEarthquake) {
+//            //clear adapter of previous data
+//            mAdapter.clear();
+//
+//            //check if the result null or not
+//            if (resultEarthquake != null && !resultEarthquake.isEmpty())
+//                mAdapter.addAll(resultEarthquake);
+//        }
+//    }
 }

@@ -166,6 +166,7 @@ public final class QueryUtils {
      * @return
      */
     public static List<EarthquakeWord> fetchEarthquakeData(String requestURL) {
+        Log.i(LOG_TAG, "When fetch earthquake data is called...........");
         //create URL
         URL url = createUrl(requestURL);
         //HTTP request to URL and JSON to response back
