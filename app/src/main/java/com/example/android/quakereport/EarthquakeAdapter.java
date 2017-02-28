@@ -49,6 +49,9 @@ public class EarthquakeAdapter extends ArrayAdapter<EarthquakeWord> {
          */
         EarthquakeWord currentWord = getItem(position);
 
+        /**
+         * Area of magnitude
+         */
         //find textview magnitude in list
         TextView findMagnitude = (TextView) convertView.findViewById(R.id.magnitude);
         // formatted double into String
@@ -56,9 +59,6 @@ public class EarthquakeAdapter extends ArrayAdapter<EarthquakeWord> {
         // show to the display
         findMagnitude.setText(formattedDecimal);
 
-        /**
-         * Area of magnitude
-         */
         //set background for magnitude color
         //fetch background from the textView
         GradientDrawable gradientDrawable = (GradientDrawable) findMagnitude.getBackground();
