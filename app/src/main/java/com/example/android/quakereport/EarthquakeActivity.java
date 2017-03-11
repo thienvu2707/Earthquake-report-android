@@ -37,7 +37,9 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<EarthquakeWord>> {
+public class EarthquakeActivity extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<List<EarthquakeWord>>,
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     //add log message
     private static final String LOG_TAG = EarthquakeActivity.class.getName();
@@ -55,12 +57,11 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
      */
     private TextView mEmptyStateTextView;
 
-    private static final String USGS_REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query";
+    private static final String USGS_REQUEST_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(LOG_TAG, "show how onCreate work call.......");
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
@@ -76,6 +77,11 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
 
         //set adapter on UI show it can show user interface
         findListView.setAdapter(mAdapter);
+
+        //Obtain the reference to the Shared Preferences file for the app
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        //And register to notified system changed
+        preferences.registerOnSharedPreferenceChangeListener(this);
 
         findListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -111,8 +117,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
             Log.i(LOG_TAG, "Show how initLoader working........");
 
             loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, this);
-        } else
-        {
+        } else {
             //display error
             //hide indicator after fetching data
             View loadingIndicator = findViewById(R.id.loading_indicator);
@@ -133,7 +138,8 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String minMagnitude = sharedPreferences.getString(getString(R.string.setting_min_magnitude_key), getString(R.string.setting_min_magnitude_default));
 
-        String orderBy = sharedPreferences.getString(getString(R.string.setting_order_by_key), getString(R.string.setting_order_by_default));
+        String orderBy = sharedPreferences.getString(getString(R.string.setting_order_by_key),
+                getString(R.string.setting_order_by_default));
 
         Uri baseUri = Uri.parse(USGS_REQUEST_URL);
         Uri.Builder uriBuilder = baseUri.buildUpon();
@@ -183,13 +189,34 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings)
-        {
+        if (id == R.id.action_settings) {
             Intent intentSettings = new Intent(this, SettingsActivity.class);
             startActivity(intentSettings);
             return true;
         }
-        return super .onOptionsItemSelected(item);
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+                                          String key) {
+        if (key.equals(R.string.setting_min_magnitude_key) ||
+                key.equals(R.string.setting_order_by_key))
+        {
+            //clear the ListView as a new query will kicked off
+            mAdapter.clear();
+
+            //Hide the empty state
+            mEmptyStateTextView.setVisibility(View.GONE);
+
+            //Show the progress bar
+            View progressBar = findViewById(R.id.loading_indicator);
+            progressBar.setVisibility(View.VISIBLE);
+
+            //Restart the loader to requery the USGS
+            getLoaderManager().restartLoader(EARTHQUAKE_LOADER_ID, null, this);
+        }
+
     }
 
     //    /**
